@@ -1000,13 +1000,21 @@ class AxarionStudio:
             messagebox.showwarning("Warning", "Please open a Python game file first")
             return
 
+        # Prevent running Axarion Studio itself
+        current_script = os.path.abspath(__file__)
+        if os.path.samefile(self.current_file, current_script):
+            messagebox.showwarning("Warning", "Cannot run Axarion Studio from within itself. Please open a game file first.")
+            return
+
         if self.unsaved_changes:
             self.save_file()
 
         def run_in_thread():
             try:
-                subprocess.run([sys.executable, self.current_file], 
-                             cwd=os.path.dirname(self.current_file))
+                # Change to the file's directory before running
+                file_dir = os.path.dirname(os.path.abspath(self.current_file))
+                subprocess.run([sys.executable, os.path.basename(self.current_file)], 
+                             cwd=file_dir)
             except Exception as e:
                 self.root.after(0, lambda: messagebox.showerror("Error", f"Could not run game: {e}"))
 
@@ -1441,7 +1449,7 @@ Common Patterns:
                     "object_pooling": False,
                     "culling": False,
                     "lod_system": False,
-                    "texture_streaming": False,
+                    "texture_streaming":False,
                     "async_loading": False,
                     "memory_optimization": False,
                     "garbage_collection": "auto",
