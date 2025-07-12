@@ -1945,9 +1945,8 @@ engine.initialize(**engine_config)
                 messagebox.showerror("Import Error", f"Failed to import settings: {e}")
 
     # Version information
-    STUDIO_VERSION = "1.0"
-    ENGINE_VERSION = "0.7.5"
-    BUILD_DATE = "2025-06-27"
+    STUDIO_VERSION = "1.3"
+    ENGINE_VERSION = "0.8.9"
 
     def show_build_settings(self):
         """Show simplified build settings dialog"""
@@ -2044,7 +2043,6 @@ engine.initialize(**engine_config)
 Version Information:
 • Studio Version: {self.STUDIO_VERSION}
 • Engine Version: {self.ENGINE_VERSION}
-• Build Date: {self.BUILD_DATE}
 
 Core Features:
 • 📦 One-click game packaging to EXE
