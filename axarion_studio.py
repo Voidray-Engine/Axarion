@@ -29,7 +29,7 @@ except ImportError:
     PYINSTALLER_AVAILABLE = False
 
 class SyntaxHighlighter:
-    """Advanced syntax highlighter for Python and AXScript"""
+    """Advanced syntax highlighter for Python"""
 
     def __init__(self, text_widget):
         self.text_widget = text_widget
