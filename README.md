@@ -3,7 +3,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-red)
-![Version](https://img.shields.io/badge/version-0.8.8-green)
+![Version](https://img.shields.io/badge/version-0.8.9-green)
 ![Status](https://img.shields.io/badge/status-Beta--stable-brightgreen)
 
 *Proudly developed by a Czech indie studio*
