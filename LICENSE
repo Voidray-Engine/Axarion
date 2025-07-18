@@ -1,3 +1,4 @@
+
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
@@ -67,6 +68,55 @@ patents cannot be used to render the program non-free.
 
   The precise terms and conditions for copying, distribution and
 modification follow.
+
+=======================================================================
+                        AXARION ENGINE LICENSE
+=======================================================================
+
+This software is the Axarion Engine, a 2D game development framework.
+
+SPECIAL EXCEPTION FOR GAMES CREATED WITH AXARION ENGINE:
+
+While the Axarion Engine itself is licensed under GPL v3, games and 
+applications created using this engine are NOT subject to GPL licensing 
+requirements. This means:
+
+1. GAMES ARE FREE: Any game, application, or interactive content created 
+   using Axarion Engine can be distributed under any license you choose, 
+   including proprietary/commercial licenses.
+
+2. NO GPL CONTAMINATION: Using Axarion Engine to create your game does 
+   NOT make your game GPL-licensed. Your game code, assets, and final 
+   executable are completely FREE from GPL restrictions.
+
+3. ENGINE VISIBILITY: If your distributed game or application makes the 
+   Axarion Engine source code visible or accessible to end users, then 
+   only the engine portions remain under GPL. Your game content stays free.
+
+4. MODIFICATION FREEDOM: You may modify Axarion Engine for your game's 
+   needs. If you distribute these engine modifications, only the engine 
+   modifications must be GPL-licensed.
+
+5. COMMERCIAL USE: You may freely sell games created with Axarion Engine 
+   without any licensing fees, royalties, or GPL obligations.
+
+WHAT REMAINS GPL:
+- The Axarion Engine source code itself
+- Any modifications you make to the engine source code (if distributed)
+- Any derivative works of the engine framework itself
+
+WHAT IS FREE FROM GPL:
+- Your game logic and code
+- Your game assets (graphics, audio, etc.)
+- Your game's user interface
+- Your compiled game executable
+- Your game's data files
+
+This exception is granted to encourage game development and ensure that 
+developers can freely commercialize their creative work while keeping 
+the engine itself open source.
+
+=======================================================================
 
                        TERMS AND CONDITIONS
 
