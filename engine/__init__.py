@@ -1,4 +1,4 @@
-__version__ = "0.9.4"
+__version__ = "1.0.2"
 __author__ = "Raynix Studio"
 
 # Core engine imports
@@ -96,3 +96,4 @@ def get_info():
 # Initialize message
 print(f"Axarion Engine v{__version__} - Standalone Mode")
 print("Ready for game development!")
+
