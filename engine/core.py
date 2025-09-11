@@ -35,14 +35,19 @@ class AxarionEngine:
         self.frame_count = 0
         self.accumulated_time = 0.0
         
-        # NEW PERFORMANCE OPTIMIZATIONS
-        self.performance_mode = "auto"  # auto, performance, quality
+        # NEW PERFORMANCE OPTIMIZATIONS WITH GPU SUPPORT
+        self.performance_mode = "auto"  # auto, performance, quality, gpu
         self.object_pool = {}  # Object pooling for better performance
         self.culling_enabled = True
         self.batch_rendering = True
         self.adaptive_fps = True
         self.frame_skip_enabled = True
         self.max_objects_per_frame = 1000
+        
+        # GPU optimization settings
+        self.gpu_acceleration_enabled = False
+        self.gpu_batch_size = 100
+        self.prefer_gpu_rendering = True
         
         # Advanced cache systems
         self.render_cache = {}
@@ -170,11 +175,21 @@ class AxarionEngine:
         self.verbose_logging = config.get('verbose', False)
 
     def _init_renderer(self, surface):
-        """Initialize rendering subsystem"""
+        """Initialize rendering subsystem with GPU optimizations"""
         try:
             from .renderer import Renderer
             self.renderer = Renderer(self.width, self.height, surface)
             self.renderer.set_vsync(self.vsync_enabled)
+            
+            # Try to enable GPU acceleration
+            if self.prefer_gpu_rendering:
+                gpu_success = self.renderer.optimize_for_gpu()
+                if gpu_success:
+                    self.gpu_acceleration_enabled = True
+                    self._log_info("🚀 GPU acceleration initialized successfully")
+                else:
+                    self._log_warning("⚠️ GPU acceleration not available, using software rendering")
+            
             return True
         except Exception as e:
             self._log_error(f"Failed to initialize renderer: {e}")
@@ -968,7 +983,7 @@ class AxarionEngine:
         self.object_pool[obj.object_type].append(obj)
 
     def set_performance_mode(self, mode):
-        """Set performance mode"""
+        """Set performance mode with GPU support"""
         self.performance_mode = mode
         
         if mode == "performance":
@@ -985,6 +1000,19 @@ class AxarionEngine:
             self.frame_skip_enabled = False
             self.max_objects_per_frame = 2000
             self._log_info("✨ Quality mode: Best graphics for powerful CPUs")
+        elif mode == "gpu":
+            # NEW: GPU-optimized mode
+            if self.renderer and self.renderer.gpu_accelerated:
+                self.culling_enabled = True
+                self.batch_rendering = True
+                self.adaptive_fps = False
+                self.frame_skip_enabled = False
+                self.max_objects_per_frame = 3000
+                self.renderer.force_gpu_optimization()
+                self._log_info("🎮 GPU mode: Maximum performance using graphics card")
+            else:
+                self._log_warning("❌ GPU mode not available, switching to performance mode")
+                self.set_performance_mode("performance")
         elif mode == "extreme_performance":
             # NEW: Extreme performance mode
             self.culling_enabled = True
@@ -1059,7 +1087,11 @@ class AxarionEngine:
         self._log_info(f"💾 Pre-allocated {len(common_types)} object pools")
 
     def get_cpu_performance_info(self):
-        """Get detailed CPU performance information"""
+        """Get detailed CPU and GPU performance information"""
+        gpu_info = {}
+        if self.renderer:
+            gpu_info = self.renderer.get_gpu_info()
+        
         return {
             "cpu_usage": self.performance_stats.get('cpu_usage', 0),
             "memory_usage": self.performance_stats.get('memory_usage', 0),
@@ -1067,12 +1099,15 @@ class AxarionEngine:
             "frame_time": self.performance_stats.get('frame_time', 0),
             "objects_rendered": self.performance_stats.get('objects_rendered', 0),
             "performance_mode": self.performance_mode,
+            "gpu_acceleration": self.gpu_acceleration_enabled,
+            "gpu_info": gpu_info,
             "optimizations_active": {
                 "culling": self.culling_enabled,
                 "batching": self.batch_rendering,
                 "adaptive_fps": self.adaptive_fps,
                 "frame_skipping": self.frame_skip_enabled,
-                "object_pooling": len(self.object_pool) > 0
+                "object_pooling": len(self.object_pool) > 0,
+                "gpu_rendering": self.gpu_acceleration_enabled
             }
         }
 
