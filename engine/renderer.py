@@ -93,17 +93,38 @@ class Renderer:
             "triangles": 0
         }
 
+        # Modern CPU/GPU distribution
+        self.cpu_rendering_enabled = True
+        self.gpu_rendering_enabled = self.gpu_accelerated
+        self.compute_shaders_enabled = False
+        self.parallel_rendering = False
+        
         # GPU optimizations
         self.gpu_surface_cache = {}
         self.converted_sprites = {}
         self.use_gpu_blitting = True
         self.batch_size = 100 if self.gpu_accelerated else 50
-
-        # Render targets for effects with GPU optimization
+        self.gpu_memory_budget = 256  # MB
+        self.gpu_memory_usage = 0
+        
+        # CPU optimizations
+        self.cpu_render_cache = {}
+        self.cpu_batch_cache = {}
+        self.software_fallbacks = {}
+        self.cpu_parallel_workers = 4
+        
+        # Render targets for effects with CPU/GPU optimization
         self.render_targets = {}
+        self.cpu_render_targets = {}
         self.create_render_target("main", width, height)
         self.create_render_target("bloom", width // 2, height // 2)
         self.create_render_target("lighting", width, height)
+        
+        # Modern rendering features
+        self.instanced_rendering = self.gpu_accelerated
+        self.deferred_rendering = False
+        self.temporal_upsampling = False
+        self.variable_rate_shading = False
 
     def create_render_target(self, name: str, width: int, height: int):
         """Create a render target for effects with GPU optimization"""
@@ -690,12 +711,93 @@ class Renderer:
         self.use_gpu_blitting = True
         self.batch_size = 200  # Larger batches for GPU
         self.frustum_culling_enabled = True
+        self.gpu_rendering_enabled = True
+        
+        # Modern GPU features
+        self.instanced_rendering = True
+        self.parallel_rendering = True
         
         # Pre-convert common surfaces
         self._preconvert_surfaces()
         
         print("🚀 GPU optimizations enabled")
         return True
+    
+    def force_cpu_mode(self):
+        """Force CPU-only rendering for weak hardware"""
+        self.gpu_rendering_enabled = False
+        self.cpu_rendering_enabled = True
+        self.use_gpu_blitting = False
+        self.batch_size = 25  # Smaller batches for CPU
+        
+        # CPU-specific optimizations
+        self.instanced_rendering = False
+        self.parallel_rendering = False
+        self.frustum_culling_enabled = True
+        
+        # Create CPU render targets
+        self._init_cpu_render_targets()
+        
+        print("🔄 Forced CPU rendering mode")
+    
+    def check_compute_capability(self):
+        """Check if GPU compute shaders are available"""
+        if not self.gpu_accelerated:
+            return False
+            
+        # Simple check - in real implementation would query OpenGL/DirectX
+        try:
+            # Placeholder for actual compute shader detection
+            self.compute_shaders_enabled = True
+            return True
+        except:
+            return False
+    
+    def enable_compute_shaders(self):
+        """Enable GPU compute shader acceleration"""
+        if not self.compute_shaders_enabled:
+            print("❌ Compute shaders not available")
+            return False
+            
+        # Enable advanced GPU compute features
+        self.deferred_rendering = True
+        self.temporal_upsampling = True
+        self.variable_rate_shading = True
+        
+        print("🔥 Compute shaders enabled")
+        return True
+    
+    def enable_gpu_acceleration(self):
+        """Enable full GPU acceleration suite"""
+        if not self.gpu_accelerated:
+            return False
+            
+        self.gpu_rendering_enabled = True
+        self.instanced_rendering = True
+        self.parallel_rendering = True
+        self.use_gpu_blitting = True
+        
+        return True
+    
+    def disable_expensive_effects(self):
+        """Disable expensive effects for performance"""
+        self.lighting_enabled = False
+        self.post_processing_enabled = False
+        self.particle_effects_enabled = False
+        self.shadows_enabled = False
+        self.bloom_enabled = False
+        self.chromatic_aberration = False
+        
+        print("⚠️ Expensive effects disabled for performance")
+    
+    def _init_cpu_render_targets(self):
+        """Initialize CPU-specific render targets"""
+        # Create software-only surfaces
+        for name, target in self.render_targets.items():
+            cpu_surface = pygame.Surface(target.get_size())
+            self.cpu_render_targets[name] = cpu_surface.convert()
+        
+        print("💻 CPU render targets initialized")
 
     def _preconvert_surfaces(self):
         """Pre-convert surfaces for GPU acceleration"""

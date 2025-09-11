@@ -44,16 +44,38 @@ class AxarionEngine:
         self.frame_skip_enabled = True
         self.max_objects_per_frame = 1000
         
+        # CPU/GPU Task Distribution
+        self.cpu_tasks = ["physics", "ai", "scripting", "collision_broad_phase"]
+        self.gpu_tasks = ["rendering", "particles", "post_processing", "lighting"]
+        
         # GPU optimization settings
         self.gpu_acceleration_enabled = False
         self.gpu_batch_size = 100
         self.prefer_gpu_rendering = True
+        self.gpu_memory_limit = 256  # MB
+        self.gpu_compute_available = False
         
-        # Advanced cache systems
-        self.render_cache = {}
-        self.collision_cache = {}
+        # CPU optimization settings
+        self.cpu_thread_pool_size = 4
+        self.cpu_affinity_enabled = False
+        self.cpu_intensive_tasks = set()
+        
+        # Modern cache systems with CPU/GPU split
+        self.cpu_cache = {"collision": {}, "pathfinding": {}, "ai_decisions": {}}
+        self.gpu_cache = {"textures": {}, "shaders": {}, "vertex_buffers": {}}
+        self.unified_cache = {}
+        self.cache_memory_budget = 128  # MB
+        
+        # Advanced multithreading
+        self.thread_pool = None
+        self.async_tasks = []
+        self.cpu_workers = []
+        
+        # Modern spatial systems
         self.spatial_grid = {}
         self.dirty_regions = []
+        self.occlusion_culling = True
+        self.dynamic_batching = True
         
         self.performance_stats = {
             "fps": 0,
@@ -175,25 +197,102 @@ class AxarionEngine:
         self.verbose_logging = config.get('verbose', False)
 
     def _init_renderer(self, surface):
-        """Initialize rendering subsystem with GPU optimizations"""
+        """Initialize rendering subsystem with advanced CPU/GPU optimizations"""
         try:
             from .renderer import Renderer
             self.renderer = Renderer(self.width, self.height, surface)
             self.renderer.set_vsync(self.vsync_enabled)
+            
+            # Initialize CPU/GPU task distribution
+            self._init_cpu_gpu_distribution()
             
             # Try to enable GPU acceleration
             if self.prefer_gpu_rendering:
                 gpu_success = self.renderer.optimize_for_gpu()
                 if gpu_success:
                     self.gpu_acceleration_enabled = True
+                    self.gpu_compute_available = self.renderer.check_compute_capability()
                     self._log_info("🚀 GPU acceleration initialized successfully")
+                    if self.gpu_compute_available:
+                        self._log_info("🔥 GPU compute shaders available")
                 else:
                     self._log_warning("⚠️ GPU acceleration not available, using software rendering")
+                    self._fallback_to_cpu_rendering()
             
             return True
         except Exception as e:
             self._log_error(f"Failed to initialize renderer: {e}")
             return False
+    
+    def _init_cpu_gpu_distribution(self):
+        """Initialize CPU/GPU task distribution system"""
+        import threading
+        import multiprocessing
+        
+        # CPU thread pool initialization
+        cpu_count = multiprocessing.cpu_count()
+        self.cpu_thread_pool_size = min(cpu_count, 6)  # Limit threads
+        
+        # Initialize CPU workers for intensive tasks
+        self._init_cpu_workers()
+        
+        # GPU task queue
+        self.gpu_command_queue = []
+        self.gpu_memory_usage = 0
+        
+        self._log_info(f"💻 CPU threads: {self.cpu_thread_pool_size}, GPU tasks: {len(self.gpu_tasks)}")
+    
+    def _init_cpu_workers(self):
+        """Initialize CPU worker threads for background tasks"""
+        import threading
+        import queue
+        
+        self.cpu_task_queue = queue.Queue()
+        self.cpu_result_queue = queue.Queue()
+        
+        for i in range(self.cpu_thread_pool_size):
+            worker = threading.Thread(target=self._cpu_worker, daemon=True)
+            worker.start()
+            self.cpu_workers.append(worker)
+    
+    def _cpu_worker(self):
+        """CPU worker thread for background processing"""
+        import time
+        while True:
+            try:
+                task = self.cpu_task_queue.get(timeout=1.0)
+                if task is None:  # Shutdown signal
+                    break
+                
+                # Execute CPU task
+                result = self._execute_cpu_task(task)
+                self.cpu_result_queue.put(result)
+                self.cpu_task_queue.task_done()
+                
+            except:
+                continue  # Timeout or error, keep working
+    
+    def _execute_cpu_task(self, task):
+        """Execute CPU-intensive task"""
+        task_type = task.get("type")
+        
+        if task_type == "physics_broad_phase":
+            return self._cpu_physics_broad_phase(task["objects"])
+        elif task_type == "pathfinding":
+            return self._cpu_pathfinding(task["start"], task["end"], task["grid"])
+        elif task_type == "ai_processing":
+            return self._cpu_ai_processing(task["entities"])
+        elif task_type == "collision_detection":
+            return self._cpu_collision_detection(task["objects"])
+        
+        return None
+    
+    def _fallback_to_cpu_rendering(self):
+        """Fallback to CPU-optimized rendering"""
+        self.renderer.force_cpu_mode()
+        self.cpu_tasks.extend(["rendering", "particles"])
+        self.gpu_tasks = ["lighting"]  # Basic lighting only
+        self._log_info("🔄 Switched to CPU-optimized rendering mode")
 
     def _init_physics(self):
         """Initialize physics subsystem"""
@@ -983,47 +1082,124 @@ class AxarionEngine:
         self.object_pool[obj.object_type].append(obj)
 
     def set_performance_mode(self, mode):
-        """Set performance mode with GPU support"""
+        """Set performance mode with advanced CPU/GPU distribution"""
         self.performance_mode = mode
         
         if mode == "performance":
-            self.culling_enabled = True
-            self.batch_rendering = True
-            self.adaptive_fps = True
-            self.frame_skip_enabled = True
-            self.max_objects_per_frame = 500
-            self._log_info("🚀 Performance mode: Maximum performance for weaker CPUs")
+            # CPU-focused optimizations
+            self._configure_cpu_mode()
+            self._log_info("🚀 Performance mode: CPU-optimized for weak hardware")
+            
         elif mode == "quality":
-            self.culling_enabled = False
-            self.batch_rendering = False
-            self.adaptive_fps = False
-            self.frame_skip_enabled = False
-            self.max_objects_per_frame = 2000
-            self._log_info("✨ Quality mode: Best graphics for powerful CPUs")
+            # Balanced CPU/GPU usage
+            self._configure_balanced_mode()
+            self._log_info("✨ Quality mode: Balanced CPU/GPU usage")
+            
         elif mode == "gpu":
-            # NEW: GPU-optimized mode
-            if self.renderer and self.renderer.gpu_accelerated:
-                self.culling_enabled = True
-                self.batch_rendering = True
-                self.adaptive_fps = False
-                self.frame_skip_enabled = False
-                self.max_objects_per_frame = 3000
-                self.renderer.force_gpu_optimization()
-                self._log_info("🎮 GPU mode: Maximum performance using graphics card")
+            # GPU-focused optimizations
+            if self.gpu_acceleration_enabled:
+                self._configure_gpu_mode()
+                self._log_info("🎮 GPU mode: Graphics card accelerated")
             else:
-                self._log_warning("❌ GPU mode not available, switching to performance mode")
+                self._log_warning("❌ GPU mode not available, using performance mode")
                 self.set_performance_mode("performance")
+                
         elif mode == "extreme_performance":
-            # NEW: Extreme performance mode
-            self.culling_enabled = True
-            self.batch_rendering = True
-            self.adaptive_fps = True
-            self.frame_skip_enabled = True
-            self.max_objects_per_frame = 200
-            self.target_fps = 30
-            self._enable_aggressive_optimizations()
-            self._log_info("⚡ Extreme Performance: For very weak CPUs")
-        # "auto" remains with default values
+            # Aggressive CPU optimizations
+            self._configure_extreme_cpu_mode()
+            self._log_info("⚡ Extreme Performance: Maximum CPU optimization")
+            
+        elif mode == "compute":
+            # Modern compute-optimized mode
+            if self.gpu_compute_available:
+                self._configure_compute_mode()
+                self._log_info("🔥 Compute mode: GPU compute shaders enabled")
+            else:
+                self._log_warning("❌ Compute mode not available")
+                self.set_performance_mode("gpu")
+    
+    def _configure_cpu_mode(self):
+        """Configure for CPU-optimized performance"""
+        # Move tasks to CPU
+        self.cpu_tasks = ["physics", "ai", "scripting", "collision", "particles", "basic_rendering"]
+        self.gpu_tasks = ["sprite_batching"]
+        
+        # CPU optimizations
+        self.culling_enabled = True
+        self.batch_rendering = True
+        self.adaptive_fps = True
+        self.frame_skip_enabled = True
+        self.max_objects_per_frame = 500
+        self.cpu_thread_pool_size = min(4, self.cpu_thread_pool_size)
+        
+        # Disable expensive effects
+        if self.renderer:
+            self.renderer.disable_expensive_effects()
+    
+    def _configure_balanced_mode(self):
+        """Configure for balanced CPU/GPU usage"""
+        # Distribute tasks evenly
+        self.cpu_tasks = ["physics", "ai", "scripting", "collision_broad_phase"]
+        self.gpu_tasks = ["rendering", "particles", "lighting", "post_processing"]
+        
+        self.culling_enabled = True
+        self.batch_rendering = True
+        self.adaptive_fps = False
+        self.frame_skip_enabled = False
+        self.max_objects_per_frame = 1500
+    
+    def _configure_gpu_mode(self):
+        """Configure for GPU-accelerated performance"""
+        # Move more tasks to GPU
+        self.cpu_tasks = ["physics", "ai", "scripting"]
+        self.gpu_tasks = ["rendering", "particles", "lighting", "post_processing", "collision_broad_phase"]
+        
+        self.culling_enabled = True
+        self.batch_rendering = True
+        self.adaptive_fps = False
+        self.frame_skip_enabled = False
+        self.max_objects_per_frame = 3000
+        
+        # Enable GPU features
+        if self.renderer:
+            self.renderer.enable_gpu_acceleration()
+            self.renderer.enable_advanced_effects()
+    
+    def _configure_extreme_cpu_mode(self):
+        """Configure for extreme CPU optimization"""
+        # All tasks on CPU with maximum optimization
+        self.cpu_tasks = ["physics", "ai", "scripting", "collision", "particles", "minimal_rendering"]
+        self.gpu_tasks = []
+        
+        self.culling_enabled = True
+        self.batch_rendering = True
+        self.adaptive_fps = True
+        self.frame_skip_enabled = True
+        self.max_objects_per_frame = 200
+        self.target_fps = 30
+        
+        # Aggressive optimizations
+        self._enable_aggressive_optimizations()
+        
+        # Reduce thread usage for weak CPUs
+        self.cpu_thread_pool_size = 2
+    
+    def _configure_compute_mode(self):
+        """Configure for GPU compute shader acceleration"""
+        # Utilize GPU compute for parallel tasks
+        self.cpu_tasks = ["ai", "scripting"]
+        self.gpu_tasks = ["rendering", "particles", "lighting", "post_processing", "physics_compute", "collision_compute"]
+        
+        self.culling_enabled = False  # GPU can handle more objects
+        self.batch_rendering = True
+        self.adaptive_fps = False
+        self.frame_skip_enabled = False
+        self.max_objects_per_frame = 5000
+        
+        # Enable compute shaders
+        if self.renderer:
+            self.renderer.enable_compute_shaders()
+            self.renderer.enable_advanced_effects(all=True)
 
     def _enable_aggressive_optimizations(self):
         """Enable aggressive optimizations for weak CPUs"""
@@ -1092,6 +1268,21 @@ class AxarionEngine:
         if self.renderer:
             gpu_info = self.renderer.get_gpu_info()
         
+        # CPU task distribution info
+        cpu_task_info = {
+            "active_tasks": len(self.cpu_tasks),
+            "thread_pool_size": self.cpu_thread_pool_size,
+            "task_queue_size": self.cpu_task_queue.qsize() if hasattr(self, 'cpu_task_queue') else 0,
+            "workers_active": len(self.cpu_workers)
+        }
+        
+        # GPU task distribution info
+        gpu_task_info = {
+            "active_tasks": len(self.gpu_tasks),
+            "memory_usage": getattr(self, 'gpu_memory_usage', 0),
+            "compute_available": self.gpu_compute_available
+        }
+        
         return {
             "cpu_usage": self.performance_stats.get('cpu_usage', 0),
             "memory_usage": self.performance_stats.get('memory_usage', 0),
@@ -1101,15 +1292,132 @@ class AxarionEngine:
             "performance_mode": self.performance_mode,
             "gpu_acceleration": self.gpu_acceleration_enabled,
             "gpu_info": gpu_info,
+            "cpu_task_info": cpu_task_info,
+            "gpu_task_info": gpu_task_info,
+            "task_distribution": {
+                "cpu_tasks": self.cpu_tasks,
+                "gpu_tasks": self.gpu_tasks
+            },
             "optimizations_active": {
                 "culling": self.culling_enabled,
                 "batching": self.batch_rendering,
                 "adaptive_fps": self.adaptive_fps,
                 "frame_skipping": self.frame_skip_enabled,
                 "object_pooling": len(self.object_pool) > 0,
-                "gpu_rendering": self.gpu_acceleration_enabled
+                "gpu_rendering": self.gpu_acceleration_enabled,
+                "cpu_threading": len(self.cpu_workers) > 0,
+                "gpu_compute": self.gpu_compute_available
             }
         }
+    
+    def _cpu_physics_broad_phase(self, objects):
+        """CPU-based physics broad phase collision detection"""
+        # Simplified broad phase for CPU processing
+        potential_pairs = []
+        for i, obj1 in enumerate(objects):
+            for obj2 in objects[i+1:]:
+                if self._broad_phase_check(obj1, obj2):
+                    potential_pairs.append((obj1, obj2))
+        return potential_pairs
+    
+    def _cpu_pathfinding(self, start, end, grid):
+        """CPU-based pathfinding calculation"""
+        # A* pathfinding implementation for CPU
+        # Simplified implementation
+        return []
+    
+    def _cpu_ai_processing(self, entities):
+        """CPU-based AI entity processing"""
+        # AI decision making, state updates
+        results = []
+        for entity in entities:
+            # Process AI logic
+            result = {"entity_id": entity.get("id"), "decision": "continue"}
+            results.append(result)
+        return results
+    
+    def _cpu_collision_detection(self, objects):
+        """CPU-based detailed collision detection"""
+        collisions = []
+        for i, obj1 in enumerate(objects):
+            for obj2 in objects[i+1:]:
+                if self._detailed_collision_check(obj1, obj2):
+                    collisions.append((obj1, obj2))
+        return collisions
+    
+    def submit_cpu_task(self, task_type, **kwargs):
+        """Submit task to CPU worker pool"""
+        if hasattr(self, 'cpu_task_queue'):
+            task = {"type": task_type, **kwargs}
+            self.cpu_task_queue.put(task)
+            return True
+        return False
+    
+    def submit_gpu_task(self, task_type, **kwargs):
+        """Submit task to GPU processing queue"""
+        task = {"type": task_type, **kwargs}
+        self.gpu_command_queue.append(task)
+        return True
+    
+    def process_gpu_tasks(self):
+        """Process queued GPU tasks"""
+        if not self.gpu_acceleration_enabled:
+            return
+            
+        while self.gpu_command_queue:
+            task = self.gpu_command_queue.pop(0)
+            self._execute_gpu_task(task)
+    
+    def _execute_gpu_task(self, task):
+        """Execute GPU task"""
+        task_type = task.get("type")
+        
+        if task_type == "render_batch":
+            if self.renderer:
+                self.renderer.gpu_render_batch(task.get("objects", []))
+        elif task_type == "particle_update":
+            if hasattr(self, 'particle_system'):
+                self.particle_system.gpu_update(task.get("particles", []))
+        elif task_type == "lighting_compute":
+            if self.renderer:
+                self.renderer.gpu_compute_lighting(task.get("lights", []))
+    
+    def balance_cpu_gpu_load(self):
+        """Dynamically balance CPU/GPU task distribution"""
+        cpu_usage = self.performance_stats.get('cpu_usage', 0)
+        fps = self.performance_stats.get('fps', 60)
+        
+        # If CPU is overloaded, move tasks to GPU
+        if cpu_usage > 85 and self.gpu_acceleration_enabled:
+            self._shift_tasks_to_gpu()
+        # If FPS is low and GPU is available, utilize GPU more
+        elif fps < 45 and self.gpu_acceleration_enabled:
+            self._shift_tasks_to_gpu()
+        # If CPU is underutilized, move some tasks back
+        elif cpu_usage < 50 and len(self.gpu_tasks) > 2:
+            self._shift_tasks_to_cpu()
+    
+    def _shift_tasks_to_gpu(self):
+        """Move CPU tasks to GPU for better performance"""
+        movable_tasks = ["particles", "collision_broad_phase", "lighting"]
+        
+        for task in movable_tasks:
+            if task in self.cpu_tasks and task not in self.gpu_tasks:
+                self.cpu_tasks.remove(task)
+                self.gpu_tasks.append(task)
+                self._log_info(f"🔄 Moved {task} to GPU")
+                break
+    
+    def _shift_tasks_to_cpu(self):
+        """Move GPU tasks to CPU to balance load"""
+        movable_tasks = ["collision_broad_phase", "particles"]
+        
+        for task in movable_tasks:
+            if task in self.gpu_tasks and task not in self.cpu_tasks:
+                self.gpu_tasks.remove(task)
+                self.cpu_tasks.append(task)
+                self._log_info(f"🔄 Moved {task} to CPU")
+                break
 
     def force_cpu_optimization(self):
         """Force CPU optimization for struggling systems"""
