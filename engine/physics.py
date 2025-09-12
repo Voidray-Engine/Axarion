@@ -26,25 +26,12 @@ class PhysicsSystem:
         self.spatial_grid: Dict[str, List[GameObject]] = {}
         self.collision_layers: Dict[str, List[GameObject]] = {}
 
-        # Modern CPU/GPU performance optimizations
+        # Performance optimizations
         self.use_spatial_partitioning = True
         self.use_broad_phase = True
         self.max_collision_checks = 500
         self.collision_cache: Dict[Tuple[int, int], bool] = {}
-        
-        # CPU optimization settings
-        self.cpu_physics_enabled = True
-        self.gpu_physics_enabled = False
-        self.parallel_physics = True
-        self.physics_thread_count = 4
-        self.cpu_intensive_mode = False
-        
-        # Advanced CPU optimizations
-        self.simd_acceleration = False
-        self.vectorized_operations = True
-        self.cache_friendly_memory = True
-        self.physics_time_slicing = True
-        
+
         # World bounds
         self.world_bounds = (0, 0, 800, 600)
         self.constrain_to_world = True
@@ -55,142 +42,27 @@ class PhysicsSystem:
         self.force_fields = []
         self.gravity_wells = []
         self.magnetic_fields = []
-        
-        # Modern physics features
-        self.continuous_collision = False
-        self.physics_interpolation = True
-        self.deterministic_physics = True
-        self.fixed_timestep = True
-        self.physics_accumulator = 0.0
-        self.fixed_dt = 1.0 / 60.0  # 60 FPS physics
 
         # Performance tracking
         self.collision_checks = 0
         self.broad_phase_culls = 0
-        self.physics_time = 0.0
-        self.objects_processed = 0
 
     def update(self, delta_time: float):
-        """Modern physics update with CPU/GPU optimization"""
+        """Enhanced physics update with optimizations"""
         if not self.enabled:
             return
-
-        import time
-        physics_start = time.perf_counter()
 
         # Reset performance counters
         self.collision_checks = 0
         self.broad_phase_culls = 0
-        self.objects_processed = 0
 
-        # Fixed timestep physics for deterministic behavior
-        if self.fixed_timestep:
-            self.physics_accumulator += delta_time
-            
-            while self.physics_accumulator >= self.fixed_dt:
-                self._physics_step(self.fixed_dt)
-                self.physics_accumulator -= self.fixed_dt
-        else:
-            self._physics_step(delta_time)
-
-        # Performance tracking
-        self.physics_time = time.perf_counter() - physics_start
-    
-    def _physics_step(self, dt: float):
-        """Single physics step with optimizations"""
         # Update spatial grid for optimization
         if self.use_spatial_partitioning:
             self._update_spatial_grid()
 
-        # CPU-intensive optimizations
-        if self.cpu_intensive_mode:
-            self._cpu_optimized_update(dt)
-        else:
-            self._standard_update(dt)
-
         # Clean up collision cache periodically
         if len(self.collision_cache) > 1000:
             self.collision_cache.clear()
-    
-    def _cpu_optimized_update(self, dt: float):
-        """CPU-optimized physics update"""
-        # Cache-friendly memory access patterns
-        if self.cache_friendly_memory:
-            self._update_with_cache_optimization(dt)
-        
-        # Vectorized operations for SIMD
-        if self.vectorized_operations:
-            self._update_with_vectorization(dt)
-        
-        # Time slicing for frame stability
-        if self.physics_time_slicing:
-            self._update_with_time_slicing(dt)
-    
-    def _standard_update(self, dt: float):
-        """Standard physics update"""
-        # Standard update path
-        pass
-    
-    def _update_with_cache_optimization(self, dt: float):
-        """Update physics with cache-friendly memory patterns"""
-        # Group objects by type for better cache utilization
-        # Process objects in spatial locality order
-        pass
-    
-    def _update_with_vectorization(self, dt: float):
-        """Update physics using vectorized operations"""
-        # Use numpy arrays for batch operations where possible
-        try:
-            import numpy as np
-            # Vectorized gravity application
-            # Vectorized velocity updates
-        except ImportError:
-            # Fallback to scalar operations
-            pass
-    
-    def _update_with_time_slicing(self, dt: float):
-        """Update physics with time slicing for frame stability"""
-        # Process physics in small chunks to maintain frame rate
-        max_time_slice = 5.0  # milliseconds
-        # Distribute physics work across multiple frames
-        pass
-    
-    def enable_cpu_intensive_mode(self):
-        """Enable CPU-intensive physics optimizations"""
-        self.cpu_intensive_mode = True
-        self.parallel_physics = True
-        self.vectorized_operations = True
-        self.cache_friendly_memory = True
-        self.physics_time_slicing = True
-        
-        print("💪 CPU-intensive physics mode enabled")
-    
-    def enable_gpu_physics(self):
-        """Enable GPU-accelerated physics (placeholder)"""
-        if not hasattr(self, 'gpu_available'):
-            print("❌ GPU physics not available")
-            return False
-            
-        self.gpu_physics_enabled = True
-        self.cpu_physics_enabled = False
-        
-        print("🚀 GPU physics enabled")
-        return True
-    
-    def optimize_for_cpu(self):
-        """Optimize physics system for CPU performance"""
-        self.cpu_physics_enabled = True
-        self.gpu_physics_enabled = False
-        
-        # CPU-specific optimizations
-        self.use_spatial_partitioning = True
-        self.use_broad_phase = True
-        self.max_collision_checks = 300  # Reduce for CPU
-        
-        # Enable all CPU optimizations
-        self.enable_cpu_intensive_mode()
-        
-        print("💻 Physics optimized for CPU")
 
     def _update_spatial_grid(self):
         """Update spatial partitioning grid for fast collision detection"""
