@@ -1,6 +1,5 @@
 """
-Axarion Engine Physics System - Enhanced
-Advanced 2D physics simulation with optimizations
+SnowFox Engine Physics System
 """
 
 import math
