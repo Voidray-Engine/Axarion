@@ -226,7 +226,7 @@ class Camera:
         self.multiple_targets.clear()
         self.multi_target_mode = False
     
-    def shake(self, intensity: float, duration: float, frequency: float = 30.0):
+    def apply_shake(self, intensity: float, duration: float, frequency: float = 30.0):
         """Add camera shake effect"""
         self.shake.start_shake(intensity, duration, frequency)
     
